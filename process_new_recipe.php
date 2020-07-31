@@ -5,9 +5,9 @@ require 'lib.php';
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-echo var_dump($_POST);
-echo "\n\nAnd the files variable contains:\n";
-echo var_dump($_FILES);
+//echo var_dump($_POST);
+/*echo "\n\nAnd the files variable contains:\n";
+echo var_dump($_FILES);*/
 
 // Check if an image was uploaded
 $upload_ok = 1;
@@ -88,9 +88,9 @@ if($upload_ok == 1) {
         for($i = 0; $i < sizeof($_POST['ing-name']); $i++) {
             if($_POST['ing-name'][$i] == '' && $_POST['ing-unit'][$i] == '' && $_POST['ing-qty'][$i] == '') {
             } else {
-                $ingredients[] = array('quantity'   => $_POST['ing-qty'][$i], 
-                                        'unit'      => $_POST['ing-unit'][$i], 
-                                        'name'      => $_POST['ing-name'][$i]); 
+                $ingredients[] = array('quantity'   => sanitize($_POST['ing-qty'][$i]), 
+                                        'unit'      => sanitize($_POST['ing-unit'][$i]), 
+                                        'name'      => sanitize($_POST['ing-name'][$i])); 
             }
         }
     }
@@ -100,7 +100,7 @@ if($upload_ok == 1) {
 
     // Delete any entirely empty rows and save the rest in the ingHeadings array
     if(isset($_POST['ing-headings'])) {
-        $ingHeadings = array_filter($_POST['ing-headings']);
+        $ingHeadings = array_filter($_POST['ing-headings'], 'sanitize');
     }
 
     // -- Process
@@ -108,7 +108,7 @@ if($upload_ok == 1) {
 
     // Delete any entirely empty rows and save the rest in the process array
     if(isset($_POST['steps'])) {
-        $process = array_filter($_POST['steps']);
+        $process = array_filter($_POST['steps'], 'sanitize');
     }
 
     // -- Process headings
@@ -116,7 +116,7 @@ if($upload_ok == 1) {
 
     // Delete any entirely empty rows and save the rest in the processHeadings array
     if(isset($_POST['proc-headings'])) {
-        $processHeadings = array_filter($_POST['proc-headings']);
+        $processHeadings = array_filter($_POST['proc-headings'], 'sanitize');
     }
 
     // -- Notes
@@ -124,7 +124,7 @@ if($upload_ok == 1) {
 
     // Delete any entirely empty rows and save the rest in the notes array
     if(isset($_POST['notes'])) {
-        $notes = array_filter($_POST['notes']);
+        $notes = array_filter($_POST['notes'], 'sanitize');
     }
 
     // Convert the arrays to JSON format
@@ -136,22 +136,33 @@ if($upload_ok == 1) {
 
     // Check if this is a new recipe or an existing recipe
     if($_POST['existingrecipe'] != 'false') {
-        // Update recipe in database
-        // Insert recipe into database
-        $sql = "UPDATE recipes SET creatorid = ?, name = ?, description = ?, attribution = ?, ingredients = ?, ing_headings = ?, process = ?, process_headings = ?, notes = ?, picture = ? WHERE id = ?";
-        $results = query_db(array($sql, $_POST['creatorid'], $_POST['name'], $_POST['description'], $_POST['attribution'], $ingredients_json, $ingHeadings_json, $process_json, $processHeadings_json, $notes_json, $final_filename, $_POST['existingrecipe']));
+        if($final_filename == '' || $final_filename == NULL) {
+            // Update recipe in database if no picture was uploaded
+            $sql = "UPDATE recipes SET creatorid = ?, name = ?, description = ?, attribution = ?, yield = ?, time = ?, ingredients = ?, ing_headings = ?, process = ?, process_headings = ?, notes = ? WHERE id = ?";
+            $results = query_db(array($sql, $_POST['creatorid'], $_POST['name'], $_POST['description'], $_POST['attribution'], $_POST['yield'], $_POST['time'], $ingredients_json, $ingHeadings_json, $process_json, $processHeadings_json, $notes_json, $_POST['existingrecipe']));
+        } else {
+            // Update recipe in database if a new picture was uploaded
+            $sql = "UPDATE recipes SET creatorid = ?, name = ?, description = ?, attribution = ?, yield = ?, time = ?, ingredients = ?, ing_headings = ?, process = ?, process_headings = ?, notes = ?, picture = ? WHERE id = ?";
+            $results = query_db(array($sql, $_POST['creatorid'], $_POST['name'], $_POST['description'], $_POST['attribution'], $_POST['yield'], $_POST['time'], $ingredients_json, $ingHeadings_json, $process_json, $processHeadings_json, $notes_json, $final_filename, $_POST['existingrecipe']));
+        }
     } else {
         // Insert recipe into database
-        $sql = "INSERT INTO recipes (creatorid, name, description, attribution, ingredients, ing_headings, process, process_headings, notes, picture) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $results = query_db(array($sql, $_POST['creatorid'], $_POST['name'], $_POST['description'], $_POST['attribution'], $ingredients_json, $ingHeadings_json, $process_json, $processHeadings_json, $notes_json, $final_filename));
+        $sql = "INSERT INTO recipes (creatorid, name, description, attribution, yield, time, ingredients, ing_headings, process, process_headings, notes, picture) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $results = query_db(array($sql, $_POST['creatorid'], $_POST['name'], $_POST['description'], $_POST['attribution'], $_POST['yield'], $_POST['time'], $ingredients_json, $ingHeadings_json, $process_json, $processHeadings_json, $notes_json, $final_filename));
     }
 
     if($results == null) {
-        $results = query_db(array("SELECT id FROM recipes WHERE name LIKE '{$_POST['name']}' ORDER BY timechanged, timecreated DESC"));
-        echo var_dump($results);
+        //$results = query_db(array("SELECT id FROM recipes WHERE name LIKE '{$_POST['name']}' ORDER BY timechanged, timecreated DESC"));
+        $results = query_db(array("SELECT id FROM recipes WHERE name LIKE ? ORDER BY timechanged, timecreated DESC", $_POST['name']));
         echo "id=" . $results[0]['id'];
     } else {
         echo $results;
     }
+}
+
+// Array sort function to sanitize user input before 
+// adding it to the database
+function sanitize($s) {
+    return strip_tags($s);
 }

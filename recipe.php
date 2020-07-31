@@ -10,8 +10,6 @@ if(!isset($_GET['id'])) {
     header('Location: index.php');
 }
 
-//echo var_dump($_SERVER);
-
 // Get recipe info from the database
 $sql = "SELECT r.*, u.firstname, u.lastname FROM recipes r LEFT JOIN users u ON r.creatorid = u.id WHERE r.id = ?";
 $results = query_db(array($sql, $_GET['id']));
@@ -32,21 +30,50 @@ if(is_null($procHeadings)) { $procHeadings = array(); }
 if(is_null($notes)) { $notes = array(); }
 
 echo "<div class='recipe-container'>";
-echo "<h1>" . $recipe['name'] . "</h1>";
-echo "<div class='attribution'>" . $recipe['attribution'] . "</div>";
+echo "<h1>" . htmlentities($recipe['name']) . "</h1>";
+echo "<div class='attribution'>" . htmlentities(addLinks($recipe['attribution'])) . "</div>";
+if(isset($recipe['yield']) && $recipe['yield'] != '') {
+    echo "<div class='yield'><strong>Yield:</strong> " . htmlentities($recipe['yield']) . "</div>";
+}
+if(isset($recipe['time']) && $recipe['time'] != '') {
+    echo "<div class='time'><strong>Time:</strong> " . htmlentities($recipe['time']) . "</div>";
+}
+echo "<hr>";
 echo "<div class='recipe-heading-container'>";
-echo "<div class='recipe-heading'>";
-echo "<div class='description'>" . $recipe['description'] . "</div>";
-include 'categories.php';
+
+// Categories
+echo "<div class='cats-applied'>";
+if(isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true) {
+    echo "<div id='edit-categories'><i class='fas fa-pen'></i><span>Edit Categories</span></div>";
+}
+echo "</div>";
+echo "<div class='categories-container'>";
+
+// Only load the input and category list if the user is logged in
+if(isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true) {
+    echo "<input type='text' id='cat-input' placeholder = 'Add category'><i class='fas fa-times' id='cat-input-close'></i>";
+    echo "<div class='cat-list'>";
+    echo "</div>";
+}
+echo "</div>";
+
+echo "<hr>";
+echo "<div class='recipe-subheading-container'>";
+if($recipe['picture'] != '' || $recipe['picture'] != NULL) {
+    echo "<div class='recipe-heading'>";
+    echo "<div class='description'>" . addLinks($recipe['description']) . "</div>";
+    echo "</div>";
+    echo "<div class='recipe-picture'>";
+    echo "<img src='img/" . $recipe['picture'] . "'>";
+    echo "</div>";
+} else {
+    echo "<div class='recipe-heading-full-width'>";
+    echo "<div class='description'>" . addLinks($recipe['description']) . "</div>";
+    echo "</div>";
+}
+echo "</div>";
 echo "<div class='contributor'>Contributed by " . $recipe['firstname'] . " " . $recipe['lastname'] . "</div>";
 echo "</div>";
-echo "<div class='recipe-picture'>";
-if($recipe['picture'] != '' || $recipe['picture'] != NULL) {
-    echo "<img src='img/" . $recipe['picture'] . "'>";
-} else {
-
-}
-echo "</div></div>";
 
 // Container to hold the ingredients list and steps
 echo "<div class='recipe-content-container'>";
@@ -63,10 +90,7 @@ foreach($ingredients as $ing) {
     $ing_num++;
     echo "<div class='ingredient-row'>";
     echo "<span class='quantity'>" . $ing['quantity'] . "</span>";
-    if($ing['unit'] != '') {
-        echo "<span class='unit'>" . $ing['unit'] . "</span>";
-    }
-    echo "<span class='name'>" . $ing['name'] . "</span>";
+    echo "<span class='name'>" . $ing['unit'] . " " . $ing['name'] . "</span>";
     echo "</div>";
 }
 echo "</div>";
@@ -82,7 +106,7 @@ foreach($process as $step) {
     }
     $step_num++;
     echo "<div class='step-num'>$step_num.</div>";
-    echo "<div class='step'>$step</div><br>";
+    echo "<div class='step'>" . addLinks($step) . "</div><br>";
 }
 echo "</div>";
 
@@ -92,10 +116,15 @@ if(!empty($notes)) {
     echo "<h2>Notes</h2>";
     echo "<ul>";
     foreach($notes as $note) {
-        echo "<li class='note'>$note</li>";
+        echo "<li class='note'>" . addLinks($note) . "</li>";
     }
     echo "</ul></div>";
 }
 
 echo "</div>";
 echo "</div>";
+
+// Replace URLs in a string with actual hyperlinks
+function addLinks($s) {
+    return preg_replace('/https?:\/\/[\w\-\.!~#?&=+\*\'"(),\/]+/','<a href="$0" target="_blank" class="converted-link">$0</a>',$s);
+}

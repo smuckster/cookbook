@@ -28,7 +28,7 @@ if(isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true) {
 
 echo "<div class='new-recipe-container'>";
 if(!empty($recipe)) {
-    echo "<h1>" . $recipe['name'] . "</h1>";
+    echo "<h1>Editing " . $recipe['name'] . "</h1>";
 } else {
     echo "<h1>Add a new recipe</h1>";
 }
@@ -50,9 +50,21 @@ echo "'>";
 
 // Description
 echo "<label for='description'>Description</label>";
-echo "<textarea id='description' name='description' rows='1' placeholder='Describe your recipe'>";
+echo "<textarea id='description' name='description' placeholder='Describe your recipe' rows='1'>";
 if(array_key_exists('description', $recipe)) { echo $recipe['description']; }
 echo "</textarea>";
+
+// Yield
+echo "<label for='yield'>Yield</label>";
+echo "<input type='text' id='yield' name='yield' placeholder='6 servings' value='";
+if(array_key_exists('yield', $recipe)) { echo $recipe['yield']; }
+echo "'>";
+
+// Time
+echo "<label for='time'>Time</label>";
+echo "<input type='text' id='time' name='time' placeholder='45 minutes' value='";
+if(array_key_exists('time', $recipe)) { echo $recipe['time']; }
+echo "'>";
 
 // Ingredients
 echo "<div class='ingredients-section'>";
@@ -69,36 +81,38 @@ if(!empty($recipe)) {
 
     // Render results
     foreach($ingredients as $ingredient) {
-        if(array_key_exists($ingNum, $ingHeadings)) {
+        /*if(array_key_exists($ingNum, $ingHeadings)) {
             echo "<div class='ingredient-heading'>";
             echo "<i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i>";
             echo "<input type='text' class='ing-heading' data-position='$ingNum' name='ing-headings[$ingNum]' placeholder='Heading' value='" . $ingHeadings[$ingNum] . "'></div>";
-        }
+        }*/
 
         echo "<div class='ingredient-container'>";
         echo "<i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i>";
-        echo "<input type='text' class='ing-qty' id='ing-qty-$ingNum' name='ing-qty[]' placeholder='1' onKeyUp='checkIngredientIfEmpty()' value='" . $ingredient['quantity'] . "'>";
+        echo "<input type='text' class='ing-qty' id='ing-qty-$ingNum' name='ing-qty[]' placeholder='1' maxlength='5' onKeyUp='checkIngredientIfEmpty()' value='" . $ingredient['quantity'] . "'>";
         echo "<input type='text' class='ing-unit' id='ing-unit-$ingNum' name='ing-unit[]' placeholder='cup' onKeyUp='checkIngredientIfEmpty()' value='" . $ingredient['unit'] . "'>";
         echo "<input type='text' class='ing-name' id='ing-name-$ingNum' name='ing-name[]' placeholder='flour' onKeyUp='checkIngredientIfEmpty()' value='" . $ingredient['name'] . "'>";
-        echo "</div>";
+        echo "<div class='add-row'><a onclick='addIngredientBelow(this)'><i class='fas fa-plus-circle'></i>Add ingredient</a>";
+        echo "</div></div>";
 
         $ingNum++;
     }
 } else {
-    echo "<div class='ingredient-heading'>";
+    /*echo "<div class='ingredient-heading'>";
     echo "<i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i>";
-    echo "<input type='text' class='ing-heading' data-position='0' name='ing-headings[0]' placeholder='Heading'></div>";
+    echo "<input type='text' class='ing-heading' data-position='0' name='ing-headings[0]' placeholder='Heading'></div>";*/
     echo "<div class='ingredient-container'>";
     echo "<i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i>";
-    echo "<input type='text' class='ing-qty' id='ing-qty-1' name='ing-qty[]' placeholder='1' onKeyUp='checkIngredientIfEmpty()'>";
+    echo "<input type='text' class='ing-qty' id='ing-qty-1' name='ing-qty[]' placeholder='1' maxlength='5' onKeyUp='checkIngredientIfEmpty()'>";
     echo "<input type='text' class='ing-unit' id='ing-unit-1' name='ing-unit[]' placeholder='cup' onKeyUp='checkIngredientIfEmpty()'>";
     echo "<input type='text' class='ing-name' id='ing-name-1' name='ing-name[]' placeholder='flour' onKeyUp='checkIngredientIfEmpty()'>";
-    echo "</div>";
+    echo "<div class='add-row'><a onclick='addIngredientBelow(this)'><i class='fas fa-plus-circle'></i>Add ingredient</a>";
+    echo "</div></div>";
 }
 
 echo "</div>";
 echo "<div class='add-ingredient'><a onclick='addIngredientRow()'><i class='fas fa-plus-circle'></i>Add ingredient</a></div>";
-echo "<div class='add-heading'><a onclick='addIngredientHeading()'><i class='fas fa-plus-circle'></i>Add heading</a></div>";
+//echo "<div class='add-heading'><a onclick='addIngredientHeading()'><i class='fas fa-plus-circle'></i>Add heading</a></div>";
 
 // Process
 echo "<div class='process-section'>";
@@ -114,37 +128,40 @@ if(!empty($recipe)) {
     $stepNum = 0;
 
     foreach($process as $step) {
-        if(array_key_exists($stepNum, $procHeadings)) {
+        /*if(array_key_exists($stepNum, $procHeadings)) {
             echo "<div class='process-heading'>";
             echo "<i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i>";
             echo "<input type='text' class='proc-heading' data-position='$stepNum' name='proc-headings[$stepNum]' placeholder='Heading' value='" . $procHeadings[$stepNum] . "'></div>";
-        }
+        }*/
 
         echo "<div class='process-container'>";
         echo "<i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i>";
-        echo "<textarea class='step' id='step-1' name='steps[]' placeholder='First...' onKeyUp='checkProcessIfEmpty()'>" . $step . "</textarea>";
+        echo "<textarea class='step' id='step-1' name='steps[]' placeholder='First...' onKeyUp='checkProcessIfEmpty()' rows='1'>" . $step . "</textarea>";
+        echo "<div class='add-row'><a onclick='addProcessBelow(this)'><i class='fas fa-plus-circle'></i>Add step</a></div>";
+        echo "</div>";
 
         $stepNum++;
     }
 
 } else {
-    echo "<div class='process-heading'>";
+    /*echo "<div class='process-heading'>";
     echo "<i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i>";
-    echo "<input type='text' class='proc-heading' data-position='0' name='proc-headings[0]' placeholder='Heading'></div>";
+    echo "<input type='text' class='proc-heading' data-position='0' name='proc-headings[0]' placeholder='Heading'></div>";*/
     echo "<div class='process-container'>";
     echo "<i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i>";
-    echo "<textarea class='step' id='step-1' name='steps[]' placeholder='First...' onKeyUp='checkProcessIfEmpty()'></textarea>";
+    echo "<textarea class='step' id='step-1' name='steps[]' placeholder='First...' onKeyUp='checkProcessIfEmpty()' rows='1'></textarea>";
+    echo "<div class='add-row'><a onclick='addProcessBelow(this)'><i class='fas fa-plus-circle'></i>Add step</a></div>";
     echo "</div>";
 }
 
 echo "</div>";
 echo "<div class='add-step'><a onclick='addProcessRow()'><i class='fas fa-plus-circle'></i>Add step</a></div>";
-echo "<div class='add-heading'><a onclick='addProcessHeading()'><i class='fas fa-plus-circle'></i>Add heading</a></div>";
+//echo "<div class='add-heading'><a onclick='addProcessHeading()'><i class='fas fa-plus-circle'></i>Add heading</a></div>";
 
 // Notes
 echo "<div class='notes-section'>";
 echo "<label for='notes'>Notes</label>";
-echo "<div class='notes-container'>";
+//echo "<div class='notes-container'>";
 
 if(!empty($recipe)) {
     // Get variables in usable format
@@ -154,12 +171,12 @@ if(!empty($recipe)) {
     $noteNum = 0;
 
     foreach($notes as $note) {
-        echo "<div class='notes-container' data-num='$noteNum'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><textarea class='note' id='note-$noteNum' name='notes[]' placeholder='Remember to...' onKeyUp='checkNoteIfEmpty()'>" . $note . "</textarea></div>";
+        echo "<div class='notes-container' data-num='$noteNum'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><textarea class='note' id='note-$noteNum' name='notes[]' placeholder='Remember to...' onKeyUp='checkNoteIfEmpty();' rows='1'>" . $note . "</textarea></div>";
 
         $noteNum++;
     }
 }
-echo "</div></div>";
+echo "</div>";
 echo "<div class='add-note'><a onclick='addNoteRow()'><i class='fas fa-plus-circle'></i>Add note</a></div>";
 
 // Picture
@@ -190,6 +207,13 @@ if(!is_null($recipe)) {
     echo "Save changes'>";
 } else {
     echo "Add recipe'>";
+}
+
+// Cancel button
+if(isset($_GET['id'])) {
+    echo "<a class='button2' style='margin-right: 1em' href='recipe.php?id=" . $_GET['id'] . "'>Cancel</a>";
+} else {
+    echo "<a class='button2' href='index.php'>Cancel</a>";
 }
 
 // Show error messages

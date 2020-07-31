@@ -14,20 +14,56 @@ $catcolors = array('#00aa55', '#aa00aa', '#5d995d', '#5a781d', // Greens
                    '#ff0000', '#d24d57', '#f64747', '#b11030', // Reds
 );
 
+if(isset($_POST['action']) && $_POST['action'] == 'toggleprivacy') {
+    // Update the appropriate category's privacy status
+    if($_POST['currentstate'] == 'on') {
+        $sql = "UPDATE categories SET private = 1 WHERE id = ?";
+        $returnValue = 'off';
+    } elseif($_POST['currentstate'] == 'off') {
+        $sql = "UPDATE categories SET private = 0 WHERE id = ?";
+        $returnValue = 'on';
+    } else {
+        echo $_POST['currentstate'];
+    }
+    $results = query_db(array($sql, $_POST['categoryid']));
+    if(is_array($results) && sizeof($results) == 0) {
+        echo $returnValue;
+    }
+}
+
+if(isset($_POST['action']) && $_POST['action'] == 'edit') {
+    // Change the category's name
+    $sql = "UPDATE categories SET name = ? WHERE id = ?";
+    $results = query_db(array($sql, $_POST['newname'], $_POST['categoryid']));
+    if(is_array($results) && sizeof($results) == 0) {
+        echo 'Success';
+    }
+}
+
 if(isset($_POST['action']) && $_POST['action'] == 'allcategories') {
     // Get a list of all categories the user can view that aren't already associated
     // with this recipe
     $readonly = 0;
     if(isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == TRUE) {
-        $sql = "SELECT * FROM categories WHERE creatorid = ? OR (creatorid = ? AND private = 0)";
-        //$sql = "SELECT DISTINCT c.* FROM categories c LEFT JOIN recipe_categories rc ON c.id = rc.categoryid LEFT JOIN recipes r ON rc.recipeid = r.id WHERE rc.recipeid != ? AND (creatorid = ? OR private = 0)";
-        $allcats = query_db(array($sql, $_SESSION['userid'], $_SESSION['userid']));
+        // Get the recipes that should fill the drop-down box
+        $sql = "SELECT DISTINCT c.*, rc.addedby FROM categories c RIGHT JOIN recipe_categories rc ON c.id = rc.categoryid 
+        WHERE rc.recipeid != ?
+        AND (rc.categoryid NOT IN (SELECT categoryid FROM recipe_categories WHERE recipeid = ?) OR rc.categoryid IS NULL)
+        AND c.private = 0
+        GROUP BY c.id, rc.addedby";
+
+        $sql = "SELECT c.*, rc.addedby
+        FROM categories c
+        LEFT JOIN recipe_categories rc ON c.id = rc.categoryid
+        WHERE rc.categoryid NOT IN (SELECT rc.categoryid FROM recipe_categories rc WHERE rc.recipeid = ?) 
+        OR rc.recipeid IS NULL";
+        $allcats = query_db(array($sql, $_POST['recipeid']));
         $readonly = 1;
-    } else {
+    } /*else {
         $sql = "SELECT * FROM categories WHERE private = 0";
         //$sql = "SELECT DISTINCT c.* FROM categories c LEFT JOIN recipe_categories rc ON c.id = rc.categoryid LEFT JOIN recipes r ON rc.recipeid = r.id WHERE rc.recipeid != ? AND  private = 0";
         $allcats = query_db(array($sql));
-    }
+    }*/
 
     // Add in the color picker
     echo "<div class='cat-color-picker'>";
@@ -44,7 +80,7 @@ if(isset($_POST['action']) && $_POST['action'] == 'allcategories') {
 
 if(isset($_POST['action']) && $_POST['action'] == 'recipecategories') {
     // Get a list of this recipe's associated categories
-    $sql = "SELECT DISTINCT c.* FROM categories c LEFT JOIN recipe_categories rc ON c.id = rc.categoryid LEFT JOIN recipes r ON rc.recipeid = r.id WHERE rc.recipeid = ? AND c.private != 1";
+    $sql = "SELECT DISTINCT c.*, rc.addedby FROM categories c LEFT JOIN recipe_categories rc ON c.id = rc.categoryid LEFT JOIN recipes r ON rc.recipeid = r.id WHERE rc.recipeid = ? AND c.private != 1";
     $recipecats = query_db(array($sql, $_POST['recipeid']));
     if(is_array($recipecats)) {
         if(sizeof($recipecats) == 0) {
@@ -55,14 +91,15 @@ if(isset($_POST['action']) && $_POST['action'] == 'recipecategories') {
     }
 
     foreach($recipecats as $cat) {
-        echo "<div class='cat-tag' style='background-color:" . $cat['color'] . "' data-id='" . $cat['id'] . "'>" . $cat['name'];
+        echo "<div class='cat-tag' style='background-color:" . $cat['color'] . "' data-id='" . $cat['id'] . "'><a href='search.php?category=" . $cat['id'] . "'>"  . $cat['name'] . "</a>";
         if(isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true) {
-            if(isset($_SESSION['userid']) && $cat['creatorid'] == $_SESSION['userid']) {
+            if(isset($_SESSION['userid']) && $_SESSION['userid'] == $cat['addedby']) {
                 echo "<i class='fas fa-times' onclick='delete_tag(this)'></i>";
             }
         }
         echo "</div>";
     }
+    echo "<div id='edit-categories'><i class='fas fa-pen'></i><span>Stop Editing</span></div>";
 }
 
 if(isset($_POST['action']) && $_POST['action'] == 'new') {
@@ -71,7 +108,6 @@ if(isset($_POST['action']) && $_POST['action'] == 'new') {
     $results = query_db(array($sql, $_POST['categoryname']));
     if(sizeof($results) == 0) {
         $sql = "INSERT INTO categories (name, color, creatorid, private) VALUES (?, ?, ?, ?)";
-        echo var_dump($_POST);
         $results = query_db(array($sql, $_POST['categoryname'], $_POST['color'], $_SESSION['userid'], 0));
 
         // Get the newly created category's id
@@ -85,8 +121,8 @@ if(isset($_POST['action']) && $_POST['action'] == 'new') {
         $results = query_db(array($sql, $_POST['recipeid'], $categoryid));
         if(sizeof($results) == 0) {
             // Associate the recipe with the category
-            $sql = "INSERT INTO recipe_categories (recipeid, categoryid) VALUES (?, ?)";
-            $results = query_db(array($sql, $_POST['recipeid'], $categoryid));
+            $sql = "INSERT INTO recipe_categories (recipeid, categoryid, addedby) VALUES (?, ?, ?)";
+            $results = query_db(array($sql, $_POST['recipeid'], $categoryid, $_SESSION['userid']));
         }
     }
 }
@@ -99,8 +135,8 @@ if(isset($_POST['action']) && $_POST['action'] == 'add') {
     //echo var_dump($results);
     if(sizeof($results) == 0) {
         // Associate the recipe with the category
-        $sql = "INSERT INTO recipe_categories (recipeid, categoryid) VALUES (?, ?)";
-        $results = query_db(array($sql, $_POST['recipeid'], $_POST['categoryid']));
+        $sql = "INSERT INTO recipe_categories (recipeid, categoryid, addedby) VALUES (?, ?, ?)";
+        $results = query_db(array($sql, $_POST['recipeid'], $_POST['categoryid'], $_SESSION['userid']));
     }
 }
 
@@ -108,4 +144,15 @@ if(isset($_POST['action']) && $_POST['action'] == 'delete') {
     // Remove the association between this recipeid and categoryid
     $sql = "DELETE FROM recipe_categories WHERE recipeid = ? AND categoryid = ?";
     $results = query_db(array($sql, $_POST['recipeid'], $_POST['categoryid']));
+}
+
+if(isset($_POST['action']) && $_POST['action'] == 'purge') {
+    // Completely remove a category from the database
+    $sql = "DELETE FROM categories WHERE id = ?";
+    $results = query_db(array($sql, $_POST['categoryid']));
+
+    $sql = "DELETE FROM recipe_categories WHERE categoryid = ?";
+    $results = query_db(array($sql, $_POST['categoryid']));
+
+    echo "success";
 }

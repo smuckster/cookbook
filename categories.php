@@ -1,6 +1,7 @@
 <?php
 
 echo "<div class='cats-applied'>";
+echo "<div id='edit-categories'><i class='fas fa-pen'></i><span>Edit Categories</span></div>";
 echo "</div>";
 echo "<div class='categories-container'>";
 

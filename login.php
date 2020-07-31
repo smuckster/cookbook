@@ -19,10 +19,10 @@ if(isset($_SESSION['loginerror']) && $_SESSION['loginerror'] == TRUE) {
     echo "<p class='login-error'>Your username and/or password was incorrect.</p>";
 }
 
-echo "<input type='submit' value='Login'>";
+echo "<input type='submit' value='Login' class='button'>";
 echo "</form>";
 
-echo "<a class='button' href='newuser.php'>Create new account</a>";
+echo "<a class='button2' href='newuser.php'>Create new account</a>";
 
 echo "</div>";
 echo "</div>";

@@ -3,13 +3,22 @@ var ingredientNum = 1;
 var stepNum = 1;
 var noteNum = 0;
 var refreshCount = 0;
+var catEditingOn = 0;
 
 $(document).ready(function() {
-    // Automatically resize textareas and set them
-    // to a default of 1 row initially
-    $('#description').autoresize(1);
-    $('.step').autoresize(1);
-    $('.note').autoresize(1);
+    /*$('.step').autoresize(1);
+    $('.note').autoresize(1);*/
+
+    /*$('.new-recipe-container textarea').each(function() {
+        if($(this).text() != '') {
+            $(this).autoresize(1);
+        } else {
+            $(this).autoresize(1);
+        }
+    });*/
+
+    resizeTextareas();
+    attachResizeListeners();
 
     // Hide username checker on new user form
     $('.username-match').hide();
@@ -25,9 +34,179 @@ $(document).ready(function() {
         $('#search-recipes').submit();
     });
 
+    // Show hamburger menu when clicked
+    $('.hamb-menu').click(function() {
+        $('.hamb-menu-dropdown').slideToggle();
+        $('.recipe-container').toggleClass('menu-open');
+    });
+
+    // Turn my category editing on
+    $('.mycategories-edit').click(function() {
+        $('.mycat-settings').slideToggle();
+    });
+
+    // Make toggle switches work for category privacy
+    $('.toggle-switch-container').click(function() {
+        var currentState = '';
+        var currentCat = $(this);
+        if($(this).children('.toggle-switch').hasClass('on')) {
+            currentState = 'on';
+        } else {
+            currentState = 'off';
+        }
+
+        $.ajax({
+            type: "POST",
+            url: "process_categories.php",
+            data: { categoryid: $(this).parents('.mycat-container').data('id'),
+                    currentstate: currentState,
+                    action: 'toggleprivacy'},
+            success: function(data) {
+                if(data == 'on') {
+                    currentCat.children('.toggle-switch').removeClass('off').addClass('on');
+                    currentCat.css('background-color', 'green');
+                    currentCat.siblings('.public').css('color', '#000');
+                    currentCat.siblings('.private').css('color', '#999');
+                } else if(data == 'off') {
+                    currentCat.children('.toggle-switch').removeClass('on').addClass('off');
+                    currentCat.css('background-color', '#999999');
+                    currentCat.siblings('.private').css('color', '#000');
+                    currentCat.siblings('.public').css('color', '#999');
+                }
+            }
+        });
+    });
+
+    // Make my categories actions work
+    $('.mycategories-container .action-delete').click(function(e) {
+        e.preventDefault();
+
+        var categoryid = $(this).parents('.mycat-container').data('id');
+        $(this).parents('.mycat-container').children('.delete-category').slideDown();
+        $('.cancel-delete-button').click(function() {
+            $(this).parent('.delete-category').slideUp();
+        });
+        $('.confirm-delete-button').click(function() {
+            $.ajax({
+                type: "POST",
+                url: "process_categories.php",
+                data: { action: 'purge',
+                        categoryid: categoryid },
+                success: function(data) {
+                    if(data == "success") {
+                        location.reload();
+                    } else {
+                        $(this).parent('.delete-category').html('Could not delete the category.');
+                    }
+                }
+            });
+        });
+    });
+
+    // Make my recipe actions work
+    $('.action-edit').click(function(e) {
+        e.preventDefault();
+
+        var recipeid = $(this).parents('.result-container').data('id');
+        window.location.replace('editrecipe.php?id=' + recipeid);
+    });
+
+    $('.myrecipes-container .action-delete').click(function(e) {
+        e.preventDefault();
+
+        var recipeid = $(this).parents('.result-container').data('id');
+        $(this).parents('.result-container').next('.delete-recipe').slideDown();
+        $('.cancel-delete-button').click(function() {
+            $(this).parent('.delete-recipe').slideUp();
+        });
+        $('.confirm-delete-button').click(function() {
+            $.ajax({
+                type: "POST",
+                url: "delete_recipe.php",
+                data: { recipeid: recipeid },
+                success: function(data) {
+                    if(data == "success") {
+                        location.reload();
+                    } else {
+                        $(this).parent('.delete-recipe').html('Could not delete the recipe.');
+                    }
+                }
+            });
+        });
+    });
+
+    // Show options for "Add..." button on editrecipe.php page
+    $('.add-row').click(function() {
+        $(this).children('.add-options').toggle(350);
+    });
+
+    // Edit category name on My Categories page
+    $('.mycat-edit').click(function() {
+        $(this).siblings('.mycat-name-edit').val($(this).siblings('.mycat-name').text());
+        $(this).siblings('.mycat-name').toggle();
+        $(this).siblings('.mycat-name-edit').toggle();
+        $(this).siblings('.mycat-name-edit').focus();
+    });
+
+    $('.mycat-name-edit').keypress(function(e) {
+        currentinput = $(this);
+        var newname = $(this).val();
+        var key = e.which;
+        if(key == 13) {
+            var catid = $(this).parent('.mycat-container').data('id');
+            $.ajax({
+                type: "POST",
+                url: "process_categories.php",
+                data: { categoryid: catid,
+                        newname: newname,
+                        action: 'edit' },
+                success: function(data) {
+                    if(data == 'Success') {
+                        currentinput.siblings('.mycat-name').text(newname);
+                        currentinput.toggle();
+                        currentinput.siblings('.mycat-name').toggle();
+                    }
+                }
+            });
+        }
+    });
+
+    // Create recently added recipes carousel
+    $('.recent-recipes-container').slick({
+        focusOnSelect: true,
+        arrows: true,
+        infinite: true,
+        speed: 300,
+        slidesToShow: 4,
+        slidesToScroll: 4
+    });
+
+    // Style the carousel buttons properly
+    $('.slick-next').html('<i class="fas fa-chevron-right"></i>');
+    $('.slick-prev').html('<i class="fas fa-chevron-left"></i>');
+
+    // Hover effect for recipe cards
+    $('.recent-recipe').hover(function() {
+        $(this).find('.recent-img').css('transform', 'scale(1.07)');
+    }, function() {
+        $(this).find('.recent-img').css('transform', 'scale(1)');
+    });
+
+    // Hover effect for recipe cards
+    $('.recipe-tile').hover(function() {
+        $(this).find('.recent-img').css('transform', 'scale(1.07)');
+    }, function() {
+        $(this).find('.recent-img').css('transform', 'scale(1)');
+    });
+
     // Handle the add new recipe form submit with AJAX
     $('#new-recipe-form').submit(function(e) {
         e.preventDefault();
+
+        // Rename the form elements
+        $('.ingredient-container').each(function() {
+
+        });
 
         var form = $('#new-recipe-form')[0];
         var data = new FormData(form);
@@ -43,6 +222,7 @@ $(document).ready(function() {
             timeout: 800000,
             success: function(newdata) {
                 if(newdata.includes('id=')) {
+                    //$('#form-error').text(newdata).show();
                     window.location.replace('recipe.php?' + newdata);
                 } else {
                     $('#form-error').text(newdata).show();
@@ -141,8 +321,8 @@ $(document).ready(function() {
 
     // Expand user menu on click
     $('.user-nav-container').click(function() {
-        $('.user-nav-container i').toggleClass('rotate');
-        $('.user-menu').slideToggle();
+        $('.user-nav-container > i').toggleClass('rotate');
+        $('.user-menu').slideToggle(100);
     });
 
     // Category tag control
@@ -173,22 +353,28 @@ $(document).ready(function() {
             $('.cat-color-picker').hide();
         }
     });
-
-    
     
 });
 
 function addIngredientRow() {
     ingredientNum++;
-    var newRow = `<div class='ingredient-container' data-num='${ingredientNum}'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><input type='text' class='ing-qty' id='ing-qty-${ingredientNum}' name='ing-qty[]' placeholder='#' onKeyUp='checkIngredientIfEmpty()'><input type='text' class='ing-unit' id='ing-unit-${ingredientNum}' name='ing-unit[]' placeholder='unit' onKeyUp='checkIngredientIfEmpty()'><input type='text' class='ing-name' id='ing-name-${ingredientNum}' name='ing-name[]' placeholder='ingredient' onKeyUp='checkIngredientIfEmpty()'></div>`;
+    var newRow = `<div class='ingredient-container' data-num='${ingredientNum}'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><input type='text' class='ing-qty' id='ing-qty-${ingredientNum}' maxlength='5' name='ing-qty[]' placeholder='#' onKeyUp='checkIngredientIfEmpty()'><input type='text' class='ing-unit' id='ing-unit-${ingredientNum}' name='ing-unit[]' placeholder='unit' onKeyUp='checkIngredientIfEmpty()'><input type='text' class='ing-name' id='ing-name-${ingredientNum}' name='ing-name[]' placeholder='ingredient' onKeyUp='checkIngredientIfEmpty()'><div class='add-row'><a onclick='addIngredientBelow(this)'><i class='fas fa-plus-circle'></i>Add ingredient</a></div>`;
     $('.ingredients-section').append(newRow);
+    attachResizeListeners();
+}
+
+function addIngredientBelow(element) {
+    var newRow = `<div class='ingredient-container' data-num='${ingredientNum}'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><input type='text' class='ing-qty' id='ing-qty-${ingredientNum}' maxlength='5' name='ing-qty[]' placeholder='#' onKeyUp='checkIngredientIfEmpty()'><input type='text' class='ing-unit' id='ing-unit-${ingredientNum}' name='ing-unit[]' placeholder='unit' onKeyUp='checkIngredientIfEmpty()'><input type='text' class='ing-name' id='ing-name-${ingredientNum}' name='ing-name[]' placeholder='ingredient' onKeyUp='checkIngredientIfEmpty()'><div class='add-row'><a onclick='addIngredientBelow(this)'><i class='fas fa-plus-circle'></i>Add ingredient</a></div>`;
+    $(element).parents('.ingredient-container').after(newRow);
+    attachResizeListeners();
 }
 
 function addIngredientHeading() {
-    var headingPosition = $('.ingredients-section .ingredient-container').length;
+    var headingPosition = $('.ingredients-section .ingredient-container').length - 1;
     var newHeading = `<div class='ingredient-heading'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()' style='margin-top: 1.6em'></i><input type='text' class='ing-heading' data-position='${headingPosition}' name='ing-headings[${headingPosition}]' placeholder='Heading' style='margin-top: 1.6em'>`;
     $('.ingredients-section').append(newHeading);
     addIngredientRow();
+    attachResizeListeners();
 }
 
 function checkIngredientIfEmpty() {
@@ -200,21 +386,32 @@ function checkIngredientIfEmpty() {
     });
     if(empty == 0) {
         addIngredientRow();
+        attachResizeListeners();
     }
 }
 
 function addProcessRow() {
     stepNum++;
-    var newRow = `<div class='process-container' data-num='${stepNum}'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><textarea class='step' id='step-${stepNum}' name='steps[]' placeholder='Next...' onKeyUp='checkProcessIfEmpty()'></textarea></div>`;
+    var newRow = `<div class='process-container' data-num='${stepNum}'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><textarea class='step' id='step-${stepNum}' name='steps[]' placeholder='Next...' onKeyUp='checkProcessIfEmpty()' rows='1'></textarea><div class='add-row'><a onclick='addProcessBelow(this)'><i class='fas fa-plus-circle'></i>Add step</a></div></div>`;
     $('.process-section').append(newRow);
-    $('#step-' + stepNum).autoresize(1);
+    //$('#step-' + stepNum).autoresize(1);
+    attachResizeListeners();
+}
+
+function addProcessBelow(element) {
+    stepNum++;
+    var newRow = `<div class='process-container' data-num='${stepNum}'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><textarea class='step' id='step-${stepNum}' name='steps[]' placeholder='Next...' onKeyUp='checkProcessIfEmpty()' rows='1'></textarea><div class='add-row'><a onclick='addProcessBelow(this)'><i class='fas fa-plus-circle'></i>Add step</a></div></div>`;
+    $(element).parents('.process-container').after(newRow);
+    //$('#step-' + stepNum).autoresize(1);
+    attachResizeListeners();
 }
 
 function addProcessHeading() {
-    var headingPosition = $('.process-section .process-container').length;
-    var newHeading = `<div class='process-heading'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()' style='margin-top: 1.6em'></i><input type='text' class='proc-heading' data-position='${headingPosition}' name='proc-headings[${headingPosition}]' placeholder='Heading' style='margin-top: 1.6em'>`;
+    var headingPosition = $('.process-section .process-container').length - 1;
+    var newHeading = `<div class='process-heading'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()' style='margin-top: 1.6em'></i><input type='text' class='proc-heading' data-position='${headingPosition}' name='proc-headings[${headingPosition}]' placeholder='Heading' style='margin-top: 1.6em'></div>`;
     $('.process-section').append(newHeading);
     addProcessRow();
+    attachResizeListeners();
 }
 
 function checkProcessIfEmpty() {
@@ -226,25 +423,32 @@ function checkProcessIfEmpty() {
     });
     if(empty == 0) {
         addProcessRow();
+        attachResizeListeners();
     }
 }
 
 function addNoteRow() {
     noteNum++;
-    var newRow = `<div class='notes-container' data-num='${noteNum}'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><textarea class='note' id='note-${noteNum}' name='notes[]' placeholder='Remember to...' onKeyUp='checkNoteIfEmpty()'></textarea></div>`;
+    var newRow = `<div class='notes-container' data-num='${noteNum}'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><textarea class='note' id='note-${noteNum}' name='notes[]' placeholder='Remember to...' onKeyUp='checkNoteIfEmpty()' rows='1'></textarea></div>`;
     $('.notes-section').append(newRow);
-    $('#note-' + noteNum).autoresize(1);
+    //$('#note-' + noteNum).autoresize(1);
+    attachResizeListeners();
 }
 
 function checkNoteIfEmpty() {
     var empty = 1;
-    $('.notes-section .notes-container:last-child textarea').each(function() {
+    /*$('.notes-section .notes-container:last-child textarea').each(function() {
         if($(this).val()) {
             empty = 0;
         }
-    });
-    if(!empty) {
+    });*/
+    if($('.notes-section .notes-container:last-child textarea').val()) {
+        empty = 0;
+    }
+
+    if(empty == 0) {
         addNoteRow();
+        attachResizeListeners();
     }
 }
 
@@ -357,71 +561,48 @@ function click_events() {
         $('.cat-list').slideUp();
     });
 
-    /* Delete a tag from a recipe when the X is clicked
-    $('.cat-tag .fa-times').click(function() {
-        // Get current recipe's id
-        var urlParams = getUrlParams();
-        $.ajax({
-            type: "POST",
-            url: "process_categories.php",
-            data: { categoryid: $(this).parent('.cat-tag').data('id'),
-                    recipeid: urlParams['id'],
-                    action: 'delete' },
-            success: function(data) {
-                if(data != "Failure") {
-                    // Stop an infinite loop from happening because I'm
-                    // not smart enough to handle it another way
-                    if(refreshCount < 2) {
-                        refresh_categories();
-                        refreshCount++;
-                    }                    
-                }
-            }
-        });
-    });*/
+    // Show editing categories interface when edit button clicked
+    $('#edit-categories').click(function() {
+        $('.categories-container').slideToggle();
+        $('.cat-tag i').toggle();
+        if($(this).children('span').text() == "Edit Categories") {
+            $(this).children('span').text('Stop Editing');
+            catEditingOn = 1;
+        } else {
+            $(this).children('span').text('Edit Categories');
+            catEditingOn = 0;
+        }
+    });
+
+    if(catEditingOn == 1) {
+        $('.cat-tag i').toggle();
+        $('#edit-categories span').text('Stop Editing');
+    } else {
+        $('#edit-categories span').text('Edit Categories');
+    }
+
+    // Hide edit categories button if user isn't logged in
+    $('.unauthenticated #edit-categories').hide();
 
     // Stop click propagation inside categories div and process
     // all other click events within the div
     $('.categories-container').click(function(e) {
-        /*
-        // Add category to recipe when clicked
-        $('.cat-list-item').click(function() {
-            // Get current recipe's id
-            var urlParams = getUrlParams();
-            $.ajax({
-                type: "POST",
-                url: "process_categories.php",
-                data: { categoryid: $(this).data('id'),
-                        recipeid: urlParams['id'],
-                        action: 'add' },
-                success: function(data) {
-                    if(data != "Failure") {
-                        //$('.cats-applied').append(data);
-                        refresh_categories();
-                    }
-                }
-            });
-        });
-
-        // Add new category to database and recipe when clicked
-        $('.color-container').click(function() {
-            // Get current recipe's id
-            var urlParams = getUrlParams();
-            $.ajax({
-                type: "POST",
-                url: "process_categories.php",
-                data: { recipeid: urlParams['id'],
-                        categoryname: $('#cat-input').val(),
-                        categorycolor: $(this).children('i').css('color'),
-                        action: 'new' },
-                success: function(data) {
-                    if(data != "Failure") {
-                        refresh_categories();
-                    }
-                }
-            });
-        });*/
-
         e.stopPropagation();
+    });
+}
+
+// Attach auto-resize event listeners to all textareas on the page
+function attachResizeListeners() {
+    $('textarea').keyup(function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight + 1) + 'px';
+    });
+}
+
+// Manually resize all textareas on the page
+function resizeTextareas() {
+    $('textarea').each(function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight + 1) + 'px';
     });
 }
