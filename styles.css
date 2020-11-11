@@ -316,7 +316,6 @@ textarea:focus {
 
 .ingredient-container > i,
 .process-container > i,
-.notes-container i,
 .ingredient-heading i,
 .process-heading i {
     font-size: 22px;
@@ -330,7 +329,6 @@ textarea:focus {
 
 .ingredient-container i:hover,
 .process-container i:hover,
-.notes-container i:hover,
 .ingredient-heading i:hover,
 .process-heading i:hover {
     color: #000;
@@ -509,6 +507,7 @@ input[type="submit"] {
 
 .picture-container {
     position:relative;
+    margin-top: 2.2em;
 }
 
 #form-error {
@@ -526,7 +525,7 @@ input[type="submit"] {
 }
 
 .recipe-heading {
-    width: 35%;
+    width: 100%;
     float: left;
     min-height: 250px;
     padding-right: 20px;
@@ -535,7 +534,7 @@ input[type="submit"] {
 .recipe-heading-full-width {
     width: 100%;
     float: left;
-    min-height: 250px;
+    min-height: 80px;
 }
 
 .recipe-subheading-container {
@@ -580,13 +579,12 @@ input[type="submit"] {
     width: 65%;
     float: right;
     min-height: 250px;
-    text-align: center;
+    text-align: right;
 }
 
 .recipe-picture img {
-    max-height: 600px;
-    max-width: 100%;
-    width: auto;
+    max-height: 300px;
+    max-width: 250px;
 }
 
 .recipe-content-container {
@@ -1434,6 +1432,18 @@ input[type="submit"] {
     text-decoration: none;
 }
 
+.r-note .action-delete {
+    display: inline-block;
+    margin-right: 32px;
+    transition: 0.2s;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.r-note .action-delete i {
+    margin-right: 12px;
+}
+
 .action-edit:hover {
     color: #000;
 }
@@ -1498,6 +1508,71 @@ input[type="submit"] {
 .cancel-delete-button {
     background-color: #fff;
     color: #000;
+}
+
+/* Notes */
+.r-note {
+    background-color: #e6e6e6;
+    padding: 1px;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.note-attr {
+    margin-bottom: 14px;
+    font-size: 20px;
+}
+
+.recipe-note {
+    margin-top: 1em;
+}
+
+.add-recipe-note-container {
+    float: right;
+    width: 65%;
+}
+
+.add-note-textarea-container {
+    width: 100%;
+    display: none;
+    margin-top: 1.2em;
+    padding: 8px 12px;
+    border: 1px solid #cccccc;
+}
+
+.note-textarea {
+    margin-top: 0.4em;
+    margin-bottom: 0.6em;
+    width: 100%;
+}
+
+.add-note-button {
+    display: inline-block;
+    padding: 6px 20px;
+    border-radius: 20px;
+    background-color: #000;
+    color: #fff;
+    margin-right: 12px;
+    border: 1px solid #000;
+    cursor: pointer;
+    transition: 0.18s;
+}
+
+.add-note-button:hover,
+.cancel-note-button:hover {
+    background-color: #383c4a;
+    color: #fff;
+}
+
+.cancel-note-button {
+    display: inline-block;
+    padding: 6px 20px;
+    border-radius: 20px;
+    background-color: #fff;
+    color: #000;
+    border: 1px solid #000;
+    cursor: pointer;
+    transition: 0.18s;
 }
 
 /* Media queries */

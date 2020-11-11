@@ -221,7 +221,10 @@ $(document).ready(function() {
             cache: false,
             timeout: 800000,
             success: function(newdata) {
-                if(newdata.includes('id=')) {
+                if($('input[name="existingrecipe"]') != null) {
+                    window.location.replace('recipe.php?id=' + $('input[name="existingrecipe"]').val());
+                }
+                else if(newdata.includes('id=')) {
                     //$('#form-error').text(newdata).show();
                     window.location.replace('recipe.php?' + newdata);
                 } else {
@@ -323,6 +326,50 @@ $(document).ready(function() {
     $('.user-nav-container').click(function() {
         $('.user-nav-container > i').toggleClass('rotate');
         $('.user-menu').slideToggle(100);
+    });
+
+    // Note button actions
+    $('.cancel-note-button').click(function(){
+        $(this).siblings('.note-textarea').val('');
+        $(this).parents('.add-note-textarea-container').hide();
+        $(this).parents('.add-note-textarea-container').siblings('.recipe-note').show();
+    });
+
+    $('.add-note-button').click(function(){
+        var urlParams = getUrlParams();
+        var recipeid = urlParams['id'];
+        var element = $(this);
+        $.ajax({
+            type: "POST",
+            url: "process_note.php",
+            data: { action: 'add', 
+                    recipeid: recipeid,
+                    note: $(this).siblings('.note-textarea').val()},
+            success: function(data) {
+                element.siblings('.note-textarea').val('');
+                element.parents('.add-note-textarea-container').hide();
+                element.parents('.add-note-textarea-container').siblings('.recipe-note').show();
+                element.parents('.add-recipe-note-container').siblings('.notes-container').append(data);
+            }
+        });
+    });
+
+    // Delete note button
+    $('.r-note .action-delete').click(function() {
+        var urlParams = getUrlParams();
+        var recipeid = urlParams['id'];
+        var element = $(this);
+        $.ajax({
+            type: "POST",
+            url: "process_note.php",
+            data: { action: 'delete',
+                    noteid: element.parents('.r-note').data('id') },
+            success: function(data) {
+                if(data == 'success') {
+                    element.parents('.r-note').hide();
+                }
+            }
+        });
     });
 
     // Category tag control
@@ -429,7 +476,7 @@ function checkProcessIfEmpty() {
 
 function addNoteRow() {
     noteNum++;
-    var newRow = `<div class='notes-container' data-num='${noteNum}'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><textarea class='note' id='note-${noteNum}' name='notes[]' placeholder='Remember to...' onKeyUp='checkNoteIfEmpty()' rows='1'></textarea></div>`;
+    var newRow = `<div class='notes-container' data-num='${noteNum}'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><textarea class='note' data-id='${noteNum}' name='notes[]' placeholder='Remember to...' onKeyUp='checkNoteIfEmpty()' rows='1'></textarea></div>`;
     $('.notes-section').append(newRow);
     //$('#note-' + noteNum).autoresize(1);
     attachResizeListeners();
@@ -450,6 +497,13 @@ function checkNoteIfEmpty() {
         addNoteRow();
         attachResizeListeners();
     }
+}
+
+function addRecipeNote(element) {
+    $(element).parents('.recipe-note').siblings('.add-note-textarea-container').show();
+    $(element).parents('.recipe-note').hide();
+    resizeTextareas();
+    attachResizeListeners();
 }
 
 function getUrlParams() {

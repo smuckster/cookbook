@@ -158,7 +158,7 @@ echo "</div>";
 echo "<div class='add-step'><a onclick='addProcessRow()'><i class='fas fa-plus-circle'></i>Add step</a></div>";
 //echo "<div class='add-heading'><a onclick='addProcessHeading()'><i class='fas fa-plus-circle'></i>Add heading</a></div>";
 
-// Notes
+/* Notes
 echo "<div class='notes-section'>";
 echo "<label for='notes'>Notes</label>";
 //echo "<div class='notes-container'>";
@@ -170,14 +170,14 @@ if(!empty($recipe)) {
 
     $noteNum = 0;
 
-    foreach($notes as $note) {
-        echo "<div class='notes-container' data-num='$noteNum'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><textarea class='note' id='note-$noteNum' name='notes[]' placeholder='Remember to...' onKeyUp='checkNoteIfEmpty();' rows='1'>" . $note . "</textarea></div>";
+    foreach($notes as $id => $note) {
+        echo "<div class='notes-container' data-num='$noteNum'><i class='fas fa-minus-circle' onclick='this.parentNode.remove()'></i><textarea class='note' data-id='$noteNum' name='notes[$id]' placeholder='Remember to...' onKeyUp='checkNoteIfEmpty();' rows='1'>" . $note . "</textarea></div>";
 
         $noteNum++;
     }
 }
 echo "</div>";
-echo "<div class='add-note'><a onclick='addNoteRow()'><i class='fas fa-plus-circle'></i>Add note</a></div>";
+echo "<div class='add-note'><a onclick='addNoteRow()'><i class='fas fa-plus-circle'></i>Add note</a></div>";*/
 
 // Picture
 echo "<div class='picture-container'>";

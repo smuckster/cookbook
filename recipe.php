@@ -15,19 +15,21 @@ $sql = "SELECT r.*, u.firstname, u.lastname FROM recipes r LEFT JOIN users u ON 
 $results = query_db(array($sql, $_GET['id']));
 $recipe = $results[0];
 
+// Get notes info from the database
+$sql = "SELECT n.*, u.firstname, u.lastname FROM notes n LEFT JOIN users u ON n.userid = u.id WHERE recipeid = ? ORDER BY timecreated ASC";
+$notes = query_db(array($sql, $_GET['id']));
+
 // Get the JSON variables into usable associate array format
 $ingredients = json_decode($recipe['ingredients'], true);
 $ingHeadings = json_decode($recipe['ing_headings'], true);
 $process = json_decode($recipe['process'], true);
 $procHeadings = json_decode($recipe['process_headings'], true);
-$notes = json_decode($recipe['notes'], true);
 
 // If the JSON variables are null, turn them into empty arrays
 if(is_null($ingredients)) { $ingredients = array(); }
 if(is_null($ingHeadings)) { $ingHeadings = array(); }
 if(is_null($process)) { $process = array(); }
 if(is_null($procHeadings)) { $procHeadings = array(); }
-if(is_null($notes)) { $notes = array(); }
 
 echo "<div class='recipe-container'>";
 echo "<h1>" . htmlentities($recipe['name']) . "</h1>";
@@ -114,11 +116,30 @@ echo "</div>";
 if(!empty($notes)) {
     echo "<div class='notes-container'>";
     echo "<h2>Notes</h2>";
-    echo "<ul>";
+    //echo var_dump($notes);
+    //echo "<ul>";
     foreach($notes as $note) {
-        echo "<li class='note'>" . addLinks($note) . "</li>";
+        echo "<div class='r-note' data-id='" . $note['id'] . "'>";
+        echo "<blockquote class='note-text'>" . addLinks($note['note']) . "<br><br>";
+        if(isset($_SESSION['userid']) && $_SESSION['userid'] == $note['userid']) {
+            echo "<div class='action-delete result-actions'><i class='fas fa-trash-alt'></i>DELETE</div>";
+        }
+        echo "<div class='note-attr' data-id='" . $note['userid'] . "'><b>" . $note['firstname'] . " " . $note['lastname'] . "</b></div></blockquote></div>";
     }
-    echo "</ul></div>";
+    //echo "</ul></div>";
+    echo "</div>";
+}
+
+if(isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true) {
+    echo "<div class='add-recipe-note-container'>";
+    echo "<div class='add-note recipe-note'><a onclick='addRecipeNote(this)'><i class='fas fa-plus-circle'></i>Add a note</a></div>";
+    echo "<div class='add-note-textarea-container'>";
+    echo "<div>Enter a new note:</div>";
+    echo "<textarea class='note-textarea' id='new-note' rows='1'></textarea>";
+    echo "<div class='add-note-button'>Save note</div>";
+    echo "<div class='cancel-note-button'>Cancel</div>";
+    echo "</div>";
+    echo "</div>";
 }
 
 echo "</div>";

@@ -119,43 +119,69 @@ if($upload_ok == 1) {
         $processHeadings = array_filter($_POST['proc-headings'], 'sanitize');
     }
 
-    // -- Notes
-    $notes = array();
-
-    // Delete any entirely empty rows and save the rest in the notes array
-    if(isset($_POST['notes'])) {
-        $notes = array_filter($_POST['notes'], 'sanitize');
-    }
-
     // Convert the arrays to JSON format
     $ingredients_json = json_encode($ingredients);
     $ingHeadings_json = json_encode($ingHeadings);
     $process_json = json_encode($process);
     $processHeadings_json = json_encode($processHeadings);
-    $notes_json = json_encode($notes);
 
     // Check if this is a new recipe or an existing recipe
     if($_POST['existingrecipe'] != 'false') {
         if($final_filename == '' || $final_filename == NULL) {
             // Update recipe in database if no picture was uploaded
-            $sql = "UPDATE recipes SET creatorid = ?, name = ?, description = ?, attribution = ?, yield = ?, time = ?, ingredients = ?, ing_headings = ?, process = ?, process_headings = ?, notes = ? WHERE id = ?";
-            $results = query_db(array($sql, $_POST['creatorid'], $_POST['name'], $_POST['description'], $_POST['attribution'], $_POST['yield'], $_POST['time'], $ingredients_json, $ingHeadings_json, $process_json, $processHeadings_json, $notes_json, $_POST['existingrecipe']));
+            $sql = "UPDATE recipes SET creatorid = ?, name = ?, description = ?, attribution = ?, yield = ?, time = ?, ingredients = ?, ing_headings = ?, process = ?, process_headings = ? WHERE id = ?";
+            $results = query_db(array($sql, $_POST['creatorid'], $_POST['name'], $_POST['description'], $_POST['attribution'], $_POST['yield'], $_POST['time'], $ingredients_json, $ingHeadings_json, $process_json, $processHeadings_json, $_POST['existingrecipe']));
         } else {
             // Update recipe in database if a new picture was uploaded
-            $sql = "UPDATE recipes SET creatorid = ?, name = ?, description = ?, attribution = ?, yield = ?, time = ?, ingredients = ?, ing_headings = ?, process = ?, process_headings = ?, notes = ?, picture = ? WHERE id = ?";
-            $results = query_db(array($sql, $_POST['creatorid'], $_POST['name'], $_POST['description'], $_POST['attribution'], $_POST['yield'], $_POST['time'], $ingredients_json, $ingHeadings_json, $process_json, $processHeadings_json, $notes_json, $final_filename, $_POST['existingrecipe']));
+            $sql = "UPDATE recipes SET creatorid = ?, name = ?, description = ?, attribution = ?, yield = ?, time = ?, ingredients = ?, ing_headings = ?, process = ?, process_headings = ?, picture = ? WHERE id = ?";
+            $results = query_db(array($sql, $_POST['creatorid'], $_POST['name'], $_POST['description'], $_POST['attribution'], $_POST['yield'], $_POST['time'], $ingredients_json, $ingHeadings_json, $process_json, $processHeadings_json, $final_filename, $_POST['existingrecipe']));
         }
     } else {
         // Insert recipe into database
-        $sql = "INSERT INTO recipes (creatorid, name, description, attribution, yield, time, ingredients, ing_headings, process, process_headings, notes, picture) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $results = query_db(array($sql, $_POST['creatorid'], $_POST['name'], $_POST['description'], $_POST['attribution'], $_POST['yield'], $_POST['time'], $ingredients_json, $ingHeadings_json, $process_json, $processHeadings_json, $notes_json, $final_filename));
+        $sql = "INSERT INTO recipes (creatorid, name, description, attribution, yield, time, ingredients, ing_headings, process, process_headings, picture) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $results = query_db(array($sql, $_POST['creatorid'], $_POST['name'], $_POST['description'], $_POST['attribution'], $_POST['yield'], $_POST['time'], $ingredients_json, $ingHeadings_json, $process_json, $processHeadings_json, $final_filename));
     }
 
     if($results == null) {
-        //$results = query_db(array("SELECT id FROM recipes WHERE name LIKE '{$_POST['name']}' ORDER BY timechanged, timecreated DESC"));
         $results = query_db(array("SELECT id FROM recipes WHERE name LIKE ? ORDER BY timechanged, timecreated DESC", $_POST['name']));
-        echo "id=" . $results[0]['id'];
+        $recipeid = $results[0]['id'];
+
+        // Process notes now that we have an id for the recipe
+        //$notes = array();
+
+        /* Delete any entirely empty rows and save the rest in the notes array
+        if(isset($_POST['notes'])) {
+            $notes = array_filter($_POST['notes'], 'sanitize');
+
+            // Get a list of comments that already exist in the database for this recipe
+            if(isset($_POST['existingrecipe']) && $_POST['existingrecipe'] != null) {
+                $sql = "SELECT id FROM notes WHERE recipeid = ?";
+                $results = query_db(array($sql, $_POST['existingrecipe']));
+            } else {
+                $results = array();
+            }
+
+            foreach($results as $note) {
+                if(array_key_exists($note['id'], $notes)) {
+                    unset($notes[$note['id']]);
+                }
+            }
+            
+            // Add each note to the notes table of the database
+            $sql = "INSERT INTO notes (userid, recipeid, note) VALUES (?, ?, ?)";
+            foreach($notes as $note) {
+                $results = query_db(array($sql, $_POST['creatorid'], $recipeid, $note));
+            }
+        } else {
+            $results = array();
+        } */
+
+        //var_dump($results);
+
+        if($results == null) {
+            echo "id=" . $recipeid;
+        }
     } else {
         echo $results;
     }
