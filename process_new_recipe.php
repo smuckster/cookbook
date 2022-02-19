@@ -137,13 +137,14 @@ if($upload_ok == 1) {
             $results = query_db(array($sql, $_POST['creatorid'], $_POST['name'], $_POST['description'], $_POST['attribution'], $_POST['yield'], $_POST['time'], $ingredients_json, $ingHeadings_json, $process_json, $processHeadings_json, $final_filename, $_POST['existingrecipe']));
         }
     } else {
+	$final_filename = is_null($final_filename) ? '' : $final_filename;
         // Insert recipe into database
         $sql = "INSERT INTO recipes (creatorid, name, description, attribution, yield, time, ingredients, ing_headings, process, process_headings, picture) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $results = query_db(array($sql, $_POST['creatorid'], $_POST['name'], $_POST['description'], $_POST['attribution'], $_POST['yield'], $_POST['time'], $ingredients_json, $ingHeadings_json, $process_json, $processHeadings_json, $final_filename));
     }
 
-    if($results == null) {
+    if($results == null || $results == '') {
         $results = query_db(array("SELECT id FROM recipes WHERE name LIKE ? ORDER BY timechanged, timecreated DESC", $_POST['name']));
         $recipeid = $results[0]['id'];
 
@@ -180,11 +181,15 @@ if($upload_ok == 1) {
         //var_dump($results);
 
         if($results == null) {
-            echo "id=" . $recipeid;
+           // echo "id=" . $recipeid;
         }
     } else {
-        echo $results;
+       // echo $results;
     }
+
+	$results = query_db(array("SELECT id FROM recipes WHERE name LIKE ? ORDER BY timechanged, timecreated DESC", $_POST['name']));
+	$recipeid = $results[0]['id'];
+	echo "id=" . $recipeid;
 }
 
 // Array sort function to sanitize user input before 

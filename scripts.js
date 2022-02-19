@@ -221,7 +221,8 @@ $(document).ready(function() {
             cache: false,
             timeout: 800000,
             success: function(newdata) {
-                if($('input[name="existingrecipe"]') != null) {
+		    window.location.replace('recipe.php?' + newdata);
+                /*if($('input[name="existingrecipe"]').val() != false) {
                     window.location.replace('recipe.php?id=' + $('input[name="existingrecipe"]').val());
                 }
                 else if(newdata.includes('id=')) {
@@ -229,7 +230,7 @@ $(document).ready(function() {
                     window.location.replace('recipe.php?' + newdata);
                 } else {
                     $('#form-error').text(newdata).show();
-                }
+                }*/
             },
             error: function(e) {
                 $('#form-error').text(e.responseText).show();
